@@ -40,7 +40,7 @@ Event OnSoulTrapped(Actor akVictim, Actor akKiller)
 EndEvent
 
 Event OnQuestStageChange(Quest akQuest, Int aiNewStage)
-	Debug.Trace("SRT: OnQuestStageChange " + akQuest As String + ": stage " + aiNewStage)
+	;Debug.Trace("SRT: OnQuestStageChange " + akQuest As String + ": stage " + aiNewStage)
 	
 	If akQuest == CR08 ; Kidnapping
 		If aiNewStage == 10 ; Accepted
