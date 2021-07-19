@@ -5,6 +5,10 @@ Scriptname SR_RQC_SCR extends Quest
 
 GlobalVariable Property SRTWearingGreyCowl1 Auto
 
+; Use this with QueryStat to subtract stats gained while wearing the grey cowl
+; NOTE- Stat exclusions are being handled in SRTStatTracker
+SRTStatTracker Property StatTracker Auto
+
 GlobalVariable Property SRTFameMult Auto
 GlobalVariable Property SRTRacismMult Auto
 
@@ -1335,7 +1339,7 @@ EndFunction
 ; Tweaks - Replaced unnecessary elseif with else
 ; Use min() instead of duplicate code
 Int Function QuestsCompletedScore()
-	Int QuestsCompleted = Game.QueryStat("Quests Completed")
+	Int QuestsCompleted = Game.QueryStat("Quests Completed") - StatTracker.UnknownQuests
 	Int QuestsCompletedCounterBalance = QuestsCompleted_CounterBalance as Int
 	Int QuestsCompletedDisplayed = QuestsCompleted - QuestsCompletedCounterBalance
 	IF (SR_MCM_Override_QuestsCompleted.GetValue() == 1) && (QuestsCompletedDisplayed > 0)
@@ -1346,7 +1350,7 @@ Int Function QuestsCompletedScore()
 EndFunction
 
 Int Function LocationsScore()
-	Int Locations = Game.QueryStat("Locations Discovered")
+	Int Locations = Game.QueryStat("Locations Discovered") - StatTracker.UnknownLocationsDiscovered
 	Int LocationsCounterBalance = Locations_CounterBalance as Int
 	Int LocationsDisplayed = Locations - LocationsCounterBalance
 	IF (SR_MCM_Override_Locations.GetValue() == 1) && (LocationsDisplayed > 0)
@@ -1357,7 +1361,7 @@ Int Function LocationsScore()
 EndFunction
 
 Int Function DungeonsScore()
-	Int Dungeons = Game.QueryStat("Dungeons Cleared")
+	Int Dungeons = Game.QueryStat("Dungeons Cleared") - StatTracker.UnknownDungeonsCleared
 	Int DungeonsCounterBalance = Dungeons_CounterBalance as int
 	Int DungeonsDisplayed = Dungeons - DungeonsCounterBalance
 	IF (SR_MCM_Override_Dungeons.GetValue() == 1) && (DungeonsDisplayed > 0)
@@ -1368,7 +1372,7 @@ Int Function DungeonsScore()
 EndFunction
 	
 Int Function KillScore()
-	Int PeopleKills = Game.QueryStat("People Killed")
+	Int PeopleKills = Game.QueryStat("People Killed") - StatTracker.UnknownPeopleKilled
 	Int PeopleKillsCounterBalance = PeopleKills_CounterBalance as Int
 	Int PeopleKillsDisplayed = PeopleKills - PeopleKillsCounterBalance
 	IF (SR_MCM_Override_PeopleKills.GetValue() == 1) && (PeopleKillsDisplayed > 0)
@@ -1379,7 +1383,7 @@ Int Function KillScore()
 EndFunction
 
 Int Function StoreInvestmentScore()
-	Int StoreInvestments = Game.QueryStat("Stores Invested In")
+	Int StoreInvestments = Game.QueryStat("Stores Invested In") - StatTracker.UnknownStoresInvested
 	Int StoreInvestmentsCounterBalance = StoreInvestments_CounterBalance as int
 	Int StoreInvestmentsDisplayed = StoreInvestments - StoreInvestmentsCounterBalance
 	IF (SR_MCM_Override_StoreInvestments.GetValue() == 1) && (StoreInvestmentsDisplayed > 0)
@@ -1390,7 +1394,7 @@ Int Function StoreInvestmentScore()
 EndFunction
 
 Int Function HousesOwnedScore()
-	Int HousesOwned = Game.QueryStat("Houses Owned")
+	Int HousesOwned = Game.QueryStat("Houses Owned") - StatTracker.UnknownHousesOwned
 	Int HousesOwnedCounterBalance = HousesOwned_CounterBalance as int
 	Int HousesOwnedDisplayed = HousesOwned - HousesOwnedCounterBalance
 	IF (SR_MCM_Override_HousesOwned.GetValue() == 1) && (HousesOwnedDisplayed > 0)
@@ -1432,7 +1436,7 @@ Int Function PlayerIsVampireScore()
 EndFunction
 
 Int Function NecksBittenScore()
-	Int NecksBitten = Game.QueryStat("Necks Bitten")
+	Int NecksBitten = Game.QueryStat("Necks Bitten") - StatTracker.UnknownNecksBitten
 	Int NecksBittenCounterBalance = NecksBitten_CounterBalance as int
 	Int NecksBittenDisplayed = NecksBitten - NecksBittenCounterBalance
 	IF (SR_MCM_Override_NecksBitten.GetValue() == 1) && (NecksBittenDisplayed > 0)
@@ -1562,7 +1566,7 @@ EndFunction
 
 Int Function WerewolfMaulScore()
 	bool Werewolf = (C00 as CompanionsHousekeepingScript).PlayerHasBeastBlood
-	Int WerewolfMauls = Game.QueryStat("Mauls")
+	Int WerewolfMauls = Game.QueryStat("Mauls") - StatTracker.UnknownMauls
 	Int WerewolfMaulsCounterBalance = WerewolfMauls_CounterBalance as int
 	Int WerewolfMaulsDisplayed = WerewolfMauls - WerewolfMaulsCounterBalance
 	IF ((SR_MCM_Override_WerewolfMauls.GetValue() == 1) && (Werewolf == True) && (WerewolfMaulsDisplayed > 0))
@@ -1582,7 +1586,7 @@ Float Function WerewolfMaulDecreamentScore()
 EndFunction
 
 Int Function WerewolfTransformationScore()
-	Int WerewolfTransformation = Game.QueryStat("Werewolf Transformations")
+	Int WerewolfTransformation = Game.QueryStat("Werewolf Transformations") - StatTracker.UnknownWereTransforms
 	Int WerewolfTransformationsCounterBalance = WerewolfTransformations_CounterBalance as int
 	Int WerewolfTransformationDisplayed = WerewolfTransformation - WerewolfTransformationsCounterBalance
 	IF (SR_MCM_Override_WerewolfTransformations.GetValue() == 1) && (WerewolfTransformationDisplayed > 0)
@@ -1704,7 +1708,7 @@ Int Function CharityScore()
 EndFunction
 
 Int Function UndeadKilledScore()
-	Int UndeadKilled = Game.QueryStat("Undead Killed")
+	Int UndeadKilled = Game.QueryStat("Undead Killed") - StatTracker.UnknownUndeadKills
 	Int UndeadKilledCounterBalance = KillsUndead_CounterBalance as int
 	Int UndeadKilledDisplayed = UndeadKilled - UndeadKilledCounterBalance
 	IF (SR_MCM_Override_KillsUndead.GetValue() == 1) && (UndeadKilledDisplayed > 0)
@@ -1715,7 +1719,7 @@ Int Function UndeadKilledScore()
 EndFunction
 
 Int Function DaedraKilledScore()
-	Int DaedraKilled = Game.QueryStat("Daedra Killed")
+	Int DaedraKilled = Game.QueryStat("Daedra Killed") - StatTracker.UnknownDaedraKills
 	Int DaedraKilledCounterBalance = KillsDaedra_CounterBalance as int
 	Int DaedraKilledDisplayed = DaedraKilled - DaedraKilledCounterBalance
 	IF (SR_MCM_Override_KillsDaedra.GetValue() == 1) && (DaedraKilledDisplayed > 0)
@@ -1794,7 +1798,7 @@ Float Function SpottedPettyCrimeDecreamentScore()
 EndFunction
 
 Int Function MurderScore()
-	Int Murders = Game.QueryStat("Murders")
+	Int Murders = Game.QueryStat("Murders") - StatTracker.UnknownMurders
 	Int MurdersCounterBalance = Murders_CounterBalance as int
 	Int MurdersDisplayed = Murders - MurdersCounterBalance
 	IF (SR_MCM_Override_Murders.GetValue() == 1) && (MurdersDisplayed > 0)
@@ -1805,7 +1809,7 @@ Int Function MurderScore()
 EndFunction
 
 Int Function HorsesStolenScore()
-	Int HorsesStolen = Game.QueryStat("Horses Stolen")
+	Int HorsesStolen = Game.QueryStat("Horses Stolen") - StatTracker.UnknownHorsesStolen
 	Int HorsesStolenCounterBalance = HorsesStolen_CounterBalance as int
 	Int HorsesStolenDisplayed = HorsesStolen - HorsesStolenCounterBalance
 	IF (SR_MCM_Override_HorsesStolen.GetValue() == 1) && (HorsesStolenDisplayed > 0)
@@ -1816,7 +1820,7 @@ Int Function HorsesStolenScore()
 EndFunction
 
 Int Function PocketsPickedScore()
-	Int PocketsPicked = Game.QueryStat("Pockets Picked")
+	Int PocketsPicked = Game.QueryStat("Pockets Picked") - StatTracker.UnknownPocketsPicked
 	Int PocketsPickedCounterBalance = PocketsPicked_CounterBalance as int
 	Int PocketsPickedDisplayed = PocketsPicked - PocketsPickedCounterBalance
 	IF (SR_MCM_Override_PocketsPicked.GetValue() == 1) && (PocketsPickedDisplayed > 0)
@@ -1827,7 +1831,7 @@ Int Function PocketsPickedScore()
 EndFunction
 	
 Int Function ItemsStolenScore()
-	Int ItemsStolen = Game.QueryStat("Items Stolen")
+	Int ItemsStolen = Game.QueryStat("Items Stolen") - StatTracker.UnknownItemsStolen
 	Int ItemsStolenCounterBalance = ItemsStolen_CounterBalance as int
 	Int ItemsStolenDisplayed = ItemsStolen - ItemsStolenCounterBalance
 	IF (SR_MCM_Override_ItemsStolen.GetValue() == 1) && (ItemsStolenDisplayed > 0)
@@ -1838,7 +1842,7 @@ Int Function ItemsStolenScore()
 EndFunction
 	
 Int Function TrespassScore()
-	Int Trespasses = Game.QueryStat("Trespasses")
+	Int Trespasses = Game.QueryStat("Trespasses") - StatTracker.UnknownTrespasses
 	Int TrespassesCounterBalance = Trespasses_CounterBalance as int
 	Int TrespassesDisplayed = Trespasses - TrespassesCounterBalance
 	IF (SR_MCM_Override_Trespasses.GetValue() == 1) && (TrespassesDisplayed > 0)
@@ -1849,7 +1853,7 @@ Int Function TrespassScore()
 EndFunction
 	
 Int Function JailEscapeScore()
-	Int JailEscapes = Game.QueryStat("Jail Escapes")
+	Int JailEscapes = Game.QueryStat("Jail Escapes") - StatTracker.UnknownJailEscapes
 	Int JailEscapesCounterBalance = JailEscapes_CounterBalance as int
 	Int JailEscapesDisplayed = JailEscapes - JailEscapesCounterBalance
 	IF (SR_MCM_Override_JailEscapes.GetValue() == 1) && (JailEscapesDisplayed > 0)
@@ -1860,7 +1864,7 @@ Int Function JailEscapeScore()
 EndFunction
 
 Int Function DaysJailedScore()
-	Int DaysJailed = Game.QueryStat("Days Jailed")
+	Int DaysJailed = Game.QueryStat("Days Jailed") - StatTracker.UnknownDaysJailed
 	Int DaysJailedCounterBalance = DaysJailed_CounterBalance as int
 	Int DaysJailedDisplayed = DaysJailed - DaysJailedCounterBalance
 	If (SR_MCM_Override_DaysJailed.GetValue() == 1) && (DaysJailedDisplayed > 0)
@@ -1871,7 +1875,7 @@ Int Function DaysJailedScore()
 EndFunction
 
 Int Function FinesPayedScore()
-	Int FinesPayed = Game.QueryStat("Fines Paid")
+	Int FinesPayed = Game.QueryStat("Fines Paid") - StatTracker.UnknownFinesPaid
 	Int FinesPayedCounterBalance = FinesPayed_CounterBalance as int
 	INt FinesPayedDisplayed = FinesPayed - FinesPayedCounterBalance
 	If (SR_MCM_Override_FinesPayed.GetValue() == 1) && (FinesPayedDisplayed > 0)
@@ -1882,7 +1886,7 @@ Int Function FinesPayedScore()
 EndFunction
 
 Int Function ThievesGuildeScore()
-	Int ThievesGuild = Game.QueryStat("Thieves' Guild Quests Completed")
+	Int ThievesGuild = Game.QueryStat("Thieves' Guild Quests Completed") - StatTracker.UnknownTGQuests
 	Int ThievesGuildCounterBalance = ThievesGuildMisc_CounterBalance as int
 	Int ThievesGuildDisplayed = ThievesGuild - ThievesGuildCounterBalance
 	IF (SR_MCM_Override_ThievesGuildMisc.GetValue() == 1) && (ThievesGuildDisplayed > 0)
@@ -1893,7 +1897,7 @@ Int Function ThievesGuildeScore()
 EndFunction
 
 Int Function DarkBrotherhoodScore()
-	Int DarkBrotherhoodQuests = Game.QueryStat("The Dark Brotherhood Quests Completed")
+	Int DarkBrotherhoodQuests = Game.QueryStat("The Dark Brotherhood Quests Completed") - StatTracker.UnknownDBQuests
 	Int DarkBrotherhoodQuestsDiscounted = DiscountedDarkBrotherhoodQuests as int
 	Int DarkBrotherhoodQuestsCounterBalance = DarkBrotherhoodMisc_CounterBalance as int
 	Int DarkBrotherhoodQuestsDisplayed = (DarkBrotherhoodQuests - DarkBrotherhoodQuestsDiscounted) - DarkBrotherhoodQuestsCounterBalance
@@ -1905,7 +1909,7 @@ Int Function DarkBrotherhoodScore()
 EndFunction
 
 Int Function CompanionsScore()
-	Int CompanionsQuests = Game.QueryStat("The Companions Quests Completed")
+	Int CompanionsQuests = Game.QueryStat("The Companions Quests Completed") - StatTracker.UnknownCompanionsQuests
 	Int CompanionsQuestsCounterBalance = CompanionsMisc_CounterBalance as int
 	Int CompanionsQuestsDisplayed = CompanionsQuests - CompanionsQuestsCounterBalance
 	IF (SR_MCM_Override_CompanionsMisc.GetValue() == 1) && (CompanionsQuestsDisplayed > 0)
@@ -1960,7 +1964,7 @@ Int Function ForswornKillerScore()
 EndFunction
 
 Int Function BrawlsWonScore()
-	Int BrawlsWon = Game.QueryStat("Brawls Won")
+	Int BrawlsWon = Game.QueryStat("Brawls Won") - StatTracker.UnknownBrawlsWon
 	Int BrawlsWonCounterBalance = Brawls_CounterBalance as int
 	Int BrawlsWonDisplayed = BrawlsWon - BrawlsWonCounterBalance
 	IF (SR_MCM_Override_Brawls.GetValue() == 1) && (BrawlsWonDisplayed > 0)
@@ -1971,7 +1975,7 @@ Int Function BrawlsWonScore()
 EndFunction
 
 Int Function MiscQuestsScore()
-	Int MiscQuests = Game.QueryStat("Misc Objectives Completed")
+	Int MiscQuests = Game.QueryStat("Misc Objectives Completed") - StatTracker.UnknownMiscObjectives
 	Int MiscQuestsCounterBalance = MiscQuests_CounterBalance as int
 	Int MiscQuestsDisplayed = MiscQuests - MiscQuestsCounterBalance
 	IF (SR_MCM_Override_MiscQuests.GetValue() == 1) && (MiscQuestsDisplayed > 0)
@@ -1982,7 +1986,7 @@ Int Function MiscQuestsScore()
 EndFunction
 
 Int Function CivilWarQuestsScore()
-	Int CivilWarQuests = Game.QueryStat("Civil War Quests Completed")
+	Int CivilWarQuests = Game.QueryStat("Civil War Quests Completed") - StatTracker.UnknownCWQuests
 	Int CivilWarQuestsCounterBalance = CivilWar_CounterBalance as int
 	Int CivilWarQuestsDisplayed = CivilWarQuests - CivilWarQuestsCounterBalance
 	If (SR_MCM_Override_CivilWar.GetValue() == 1) && (CivilWarQuestsDisplayed > 0)
@@ -2008,7 +2012,7 @@ Int Function WarriorSkillScore()
 EndFunction	
 
 Int Function PersuasionScore()
-	Int Persuasions = Game.QueryStat("Persuasions")
+	Int Persuasions = Game.QueryStat("Persuasions") - StatTracker.UnknownPersuasions
 	Int PersuasionsCounterBalance = Persuasions_CounterBalance as int
 	Int PersuasionsDisplayed = Persuasions - PersuasionsCounterBalance
 	IF (SR_MCM_Override_Persuasions.GetValue() == 1) && (PersuasionsDisplayed > 0)
@@ -2019,7 +2023,7 @@ Int Function PersuasionScore()
 EndFunction
 
 Int Function IntimidationScore()
-	Int Intimidations = Game.QueryStat("Intimidations")
+	Int Intimidations = Game.QueryStat("Intimidations") - StatTracker.UnknownIntimidations
 	Int IntimidationsCounterBalance = Intimidations_CounterBalance as int
 	Int IntimidationsDisplayed = Intimidations - IntimidationsCounterBalance
 	IF (SR_MCM_Override_Intimidations.GetValue() == 1) && (IntimidationsDisplayed > 0)
@@ -2030,7 +2034,7 @@ Int Function IntimidationScore()
 EndFunction
 
 Int Function BribeScore()
-	Int Bribes = Game.QueryStat("Bribes")
+	Int Bribes = Game.QueryStat("Bribes") - StatTracker.UnknownBribes
 	Int BribesCounterBalance = Bribes_CounterBalance as int
 	Int BribesDisplayed = Bribes - BribesCounterBalance
 	IF (SR_MCM_Override_Bribes.GetValue() == 1) && (BribesDisplayed > 0)
@@ -2041,7 +2045,7 @@ Int Function BribeScore()
 EndFunction
 
 Int Function CollegeWinterholdScore()
-	Int CollegeWinterholdQuests = Game.QueryStat("College of Winterhold Quests Completed")
+	Int CollegeWinterholdQuests = Game.QueryStat("College of Winterhold Quests Completed") - StatTracker.UnknownCWQuests
 	Int CollegeWinterholdQuestsCounterBalance = CollegeMisc_CounterBalance as int
 	Int CollegeWinterholdQuestsDisplayed = CollegeWinterholdQuests - CollegeWinterholdQuestsCounterBalance
 	IF (SR_MCM_Override_CollegeMisc.GetValue() == 1) && (CollegeWinterholdQuestsDisplayed > 0)
@@ -2052,7 +2056,7 @@ Int Function CollegeWinterholdScore()
 EndFunction
 
 Int Function BooksReadScore()
-	Int BooksRead = Game.QueryStat("Books Read")
+	Int BooksRead = Game.QueryStat("Books Read") - StatTracker.UnknownBooksRead
 	Int DiscountedBookReads = DiscountedBooksRead as int
 	Int BooksReadCounterBalance = BooksRead_CounterBalance as int
 	Int BooksReadDisplayed = (BooksRead - DiscountedBookReads) - BooksReadCounterBalance
@@ -2095,7 +2099,7 @@ Int Function BlackSoulTrapScore()
 EndFunction
 
 Int Function SoulsTrappedScore()
-	Int SoulsTrapped = Game.QueryStat("Souls Trapped")
+	Int SoulsTrapped = Game.QueryStat("Souls Trapped") - StatTracker.UnknownSoulsTrapped
 	Int SoulsTrappedCounterBalance = SoulsTrapped_CounterBalance as int
 	Int SoulsTrappedDisplayed = SoulsTrapped - SoulsTrappedCounterBalance
 	If (SR_MCM_Override_SoulsTrapped.GetValue() == 1) && (SoulsTrappedDisplayed > 0)
@@ -2834,7 +2838,7 @@ float property CrimeMurdersSeenDec = 0.0 auto
 float property NecroTimesDecreament = 0.0 auto
 
 Function IncrementNecksBittenDec()
-	float NecksBitten = Game.QueryStat("Necks Bitten") as float
+	float NecksBitten = Game.QueryStat("Necks Bitten") - StatTracker.UnknownNecksBitten as float
 	float NecksBittenCounterBalance = NecksBitten_CounterBalance as float
 	float NecksBittenDisplayed = NecksBitten - NecksBittenCounterBalance
 	float NecksBittenDenominator = NecksBittenNom as float
@@ -2915,7 +2919,7 @@ Function IncrementCommentVampGuardDec()
 EndFunction
 
 Function IncrementWerewolfMaulDec()
-	float WerewolfMauls = Game.QueryStat("Mauls") as float
+	float WerewolfMauls = Game.QueryStat("Mauls") - StatTracker.UnknownMauls as float
 	float WerewolfMaulsCounterBalance = WerewolfMauls_CounterBalance as float
 	float WerewolfMaulsDisplayed = WerewolfMauls - WerewolfMaulsCounterBalance
 	float WerewolfMaulsDenominator = WerewolfMaulNom as float
@@ -2928,7 +2932,7 @@ Function IncrementWerewolfMaulDec()
 EndFunction
 
 Function IncrementWerewolfTransDec()
-	float WerewolfTransformationScore = Game.QueryStat("Werewolf Transformations") as float
+	float WerewolfTransformationScore = Game.QueryStat("Werewolf Transformations") - StatTracker.UnknownWereTransforms as float
 	float WerewolfTransformationsCounterBalance = WerewolfTransformations_CounterBalance as float
 	float WerewolfTransformationDisplayed = WerewolfTransformationScore - WerewolfTransformationsCounterBalance
 	float WerewolfTransformationsDenominator = WerewolfTransformationsNom as float
@@ -4284,7 +4288,7 @@ Function SetNecroTimesDecreamentPerc(float NewValue)
 EndFunction
 
 Function CalibrateNecksBittenDec()
-	float NecksBitten = Game.QueryStat("Necks Bitten") as float
+	float NecksBitten = Game.QueryStat("Necks Bitten") - StatTracker.UnknownNecksBitten as float
 	float NecksBittenCounterBalance = NecksBitten_CounterBalance as float
 	float NecksBittenDisplayed = NecksBitten - NecksBittenCounterBalance
 	float NecksBittenDenominator = NecksBittenNom as float
@@ -4371,7 +4375,7 @@ Function CalibrateCommentVampGuardDec()
 EndFunction
 
 Function CalibrateWerewolfMaulDec()
-	float WerewolfMauls = Game.QueryStat("Mauls") as float
+	float WerewolfMauls = Game.QueryStat("Mauls") - StatTracker.UnknownMauls as float
 	float WerewolfMaulsCounterBalance = WerewolfMauls_CounterBalance as float
 	float WerewolfMaulsDisplayed = WerewolfMauls - WerewolfMaulsCounterBalance
 	float WerewolfMaulsDenominator = WerewolfMaulNom as float
@@ -4385,7 +4389,7 @@ Function CalibrateWerewolfMaulDec()
 EndFunction
 
 Function CalibrateWerewolfTransDec()
-	float WerewolfTransformationScore = Game.QueryStat("Werewolf Transformations") as float
+	float WerewolfTransformationScore = Game.QueryStat("Werewolf Transformations") - StatTracker.UnknownWereTransforms as float
 	float WerewolfTransformationsCounterBalance = WerewolfTransformations_CounterBalance as float
 	float WerewolfTransformationDisplayed = WerewolfTransformationScore - WerewolfTransformationsCounterBalance
 	float WerewolfTransformationsDenominator = WerewolfTransformationsNom as float

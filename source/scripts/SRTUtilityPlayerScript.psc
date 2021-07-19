@@ -22,6 +22,8 @@ ReferenceAlias Property SR_RQC_PlayerAlias1 Auto
 
 Spell Property SRTGreyCowlSpell_ Auto
 
+SRTStatTracker Property StatTracker Auto
+
 ; Cannibalism
 MagicEffect Property DA11AbFortifyHealRate Auto
 
@@ -45,6 +47,8 @@ Event OnObjectEquipped(Form akBaseObject, ObjectReference akReference)
 		SR_Global_WerewolfSuspicion1.SetValue(0)
 		SR_Global_VampireSuspicion1.SetValue(0)
 		
+		StatTracker.CowlEquipped()
+		
 		SR_RQC_QST1.UnregisterForUpdateGameTime() ; Pause tracking
 		SR_RQC_PlayerAlias1.UnregisterForUpdateGameTime()
 		
@@ -56,6 +60,8 @@ EndEvent
 Event OnObjectUnequipped(Form akBaseObject, ObjectReference akReference)
 	If SRTGreyCowlList1.HasForm(akBaseObject)
 		SRTWearingGreyCowl1.SetValue(0.0)
+		
+		StatTracker.CowlUnequipped()
 		
 		; Restore regular reputation
 		SR_RQC_QST1.CalculateReputation()

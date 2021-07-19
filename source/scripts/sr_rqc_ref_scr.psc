@@ -2,6 +2,7 @@ Scriptname SR_RQC_REF_SCR extends ReferenceAlias
 {This script applies the Skyrim reputation based player abilities}
 
 GlobalVariable Property SRTWearingGreyCowl1 Auto
+SRTStatTracker Property StatTracker Auto
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PROPERTIES
@@ -1867,9 +1868,9 @@ Function Werewolf()
 EndFunction
 
 Function Assassin()
-	float Murders = Game.QueryStat("Murders") as float
-	float Backstabs = Game.QueryStat("Backstabs") as float
-	float DarkBrotherhoodQuests = Game.QueryStat("The Dark Brotherhood Quests Completed") as float
+	float Murders = Game.QueryStat("Murders") - StatTracker.UnknownMurders as float
+	float Backstabs = Game.QueryStat("Backstabs") - StatTracker.UnknownBackstabs as float
+	float DarkBrotherhoodQuests = Game.QueryStat("The Dark Brotherhood Quests Completed") - StatTracker.UnknownDBQuests as float
 	float DarkBrotherhoodQuestsMax = SR_RQC_Script.DarkBrotherhoodQuestsMax as float
 	float SeenMurders = SR_RQC_Script.AdjSpottedMurderScore() as float
 	float SpottedMurdersMin = SR_RQC_Script.SpottedMurdersMin as float
