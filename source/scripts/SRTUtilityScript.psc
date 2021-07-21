@@ -9,6 +9,8 @@ Bool Property PapyrusExtenderInstalled Auto Hidden
 
 FormList Property SRTGreyCowlList1 Auto
 
+Quest Property MQ101 Auto
+
 Bool Function IsModLoaded(String pluginName, Int sampleForm)
 { Check for mod without log errors if SKSE is installed }
 	If SRTUseSKSE.GetValue() == 1.0
@@ -33,10 +35,28 @@ EndFunction
 Int version = 3
 
 Event OnInit()
+	; Detect if the mod is installed on an existing game
+	If MQ101.GetStage() >= 70
+		RetroFixes()
+	EndIf
+
 	Maintenance()
 EndEvent
 
 Function Maintenance()
+	CheckMods()
+	
+	; Handle updates
+	If version < 3
+		If version == 1
+			Update_2()
+		ElseIf version == 2
+			Update_3()
+		EndIf
+	EndIf
+EndFunction
+
+Function CheckMods()
 	If SKSE.GetVersion() > 0
 		SRTUseSKSE.SetValue(1.0)
 		
@@ -85,15 +105,6 @@ Function Maintenance()
 	Else
 		SR_PluginEnabled_SkyrimUnbound.SetValue(0.0)
 	EndIf
-	
-	; Handle updates
-	If version < 3
-		If version == 1
-			Update_2()
-		ElseIf version == 2
-			Update_3()
-		EndIf
-	EndIf
 EndFunction
 
 GlobalVariable Property SRTBlockedLines Auto
@@ -117,6 +128,24 @@ EndProperty
 ; --------- UPDATE FUNCTIONS -------------
 
 SR_RQC_SCR Property SR_RQC_QST Auto
+
+GlobalVariable Property SR_MCM_Override_BlackSoulTraps Auto
+GlobalVariable Property SR_MCM_Override_CannibalFeed Auto
+
+; Retroactive fixes for if the reputation improved is installed on an existing save
+Function RetroFixes()
+	Debug.Trace("SRT: Retroactive updates")
+	CheckMods()
+	
+	If SR_PluginEnabled_SkyrimUnbound.GetValue() == 1.0
+		UnboundInstall()
+	EndIf
+	
+	; Enable cannibalism and black soul trap tracking
+	; This won't do anything unless papyrus extender is installed
+	SR_MCM_Override_BlackSoulTraps.SetValue(1.0)
+	SR_MCM_Override_CannibalFeed.SetValue(1.0)
+EndFunction
 
 Function Update_2()
 	Debug.Trace("SRT: Updating v1 -> v2")
@@ -160,6 +189,20 @@ Function Update_3()
 	
 	; Fix reputation from skyrim unbound
 	If SR_PluginEnabled_SkyrimUnbound.GetValue() == 1.0
+		UnboundInstall()
+	Else
+		Debug.Trace("Skyirm unbound not installed")
+	EndIf
+	
+	version = 3
+	Debug.Trace("SRT: Updates complete")
+EndFunction
+
+Function UnboundInstall()
+	Debug.Trace("Retroactive reputation for skyrim unbound")
+
+	; Fix reputation from skyrim unbound
+	If SR_PluginEnabled_SkyrimUnbound.GetValue() == 1.0
 		If (SR_RQC_QST_MainAndSideQuestBundle As SR_RQC_SCR_MQ103).GetState() == "MQ103QuestChecked"
 			SR_RQC_QST.QuestDependability -= 1
 			Debug.Trace("Reverted reputation from MQ103")
@@ -177,7 +220,5 @@ Function Update_3()
 	Else
 		Debug.Trace("Skyirm unbound not installed")
 	EndIf
-	
-	version = 3
-	Debug.Trace("SRT: Updates complete")
 EndFunction
+
