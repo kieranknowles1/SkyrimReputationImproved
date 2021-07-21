@@ -606,6 +606,21 @@ endEvent
 ; PAGE DISPLAY EVENTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+Function InstallGlobal(String compatModName, GlobalVariable modGlobal)
+{ Show if a mod is installed based on a global }
+	Bool installed
+	If modGlobal.GetValue() == 1.0
+		installed = True
+	Else
+		installed = False
+	EndIf
+	
+	AddToggleOption(compatModName, installed, OPTION_FLAG_DISABLED)
+EndFunction
+
+GlobalVariable Property SR_PluginEnabled_SkyrimUnbound Auto
+GlobalVariable Property SRTUseGDO Auto
+
 ; @implements SKI_ConfigBase
 event OnPageReset(string a_page)
 	{Called when a new page is selected, including the initial empty page}
@@ -1050,6 +1065,11 @@ event OnPageReset(string a_page)
 		AddHeaderOption("Miscellaneous")
 		iSlowCalculations 			= AddToggleOption("Slower Reputation Calc.", bSlowCalculations)
 		AddEmptyOption()
+		
+		; Improvements - Show installed mods
+		AddHeaderOption("Detected Mods")
+		InstallGlobal("Skyrim Unbound", SR_PluginEnabled_SkyrimUnbound)
+		InstallGlobal("Guard Dialogue Overhaul", SRTUseGDO)
 		
 		SetCursorPosition(1)
 		
@@ -1874,9 +1894,11 @@ event OnOptionSelect(int a_option)
 		SetToggleOptionValue(a_option, bEnableCheats)
 		if(bEnableCheats == False)
 			CheatsEnabled = 0
+			ForcePageReset()
 		else
 			CheatsEnabled = 1
-			ShowMessage("WARNING: Increasing/decreasing scores by more than 1-3 points for any one quest may skew your reputation. \n Refresh page to access options", false)
+			ForcePageReset()
+			ShowMessage("WARNING: Increasing/decreasing scores by more than 1-3 points for any one quest may skew your reputation.", false)
 		endif
 		
 	elseIf (a_option == iMuteMod)
@@ -3081,7 +3103,8 @@ endEvent
 ; @implements SKI_ConfigBase
 event OnOptionHighlight(int a_option)
 	{Called when the user highlights an option}
-	if (a_option == iReputationStatus)
+
+	If (a_option == iReputationStatus)
 		SetInfoText("(Worst)  Feared  |  Hated  |  Disliked  |  Unknown/Neutral  |  Liked  |  Admired  |  Hero  (Best)")
 	elseIf (a_option == iReputationLevel)
 		SetInfoText("MAXIMUM fame/notoriety lvl: 1 = Unknown | 2 = Liked/Disliked | 3 = Admired/Hated | 4 = Hero/Feared")

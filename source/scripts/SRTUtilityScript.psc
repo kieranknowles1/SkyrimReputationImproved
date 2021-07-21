@@ -3,6 +3,7 @@ Scriptname SRTUtilityScript extends Quest
 
 GlobalVariable Property SRTUseSKSE Auto
 GlobalVariable Property SRTUseGDO Auto
+GlobalVariable Property SR_PluginEnabled_SkyrimUnbound Auto
 
 Bool Property PapyrusExtenderInstalled Auto Hidden
 
@@ -29,7 +30,7 @@ Function TryAddForm(Form formToAdd, FormList destinationList)
 	EndIf
 EndFunction
 
-Int version = 2
+Int version = 3
 
 Event OnInit()
 	Maintenance()
@@ -71,10 +72,26 @@ Function Maintenance()
 		TryAddForm(Game.GetFormFromFile(0xD62, "ccbgssse020-graycowl.esl"), SRTGreyCowlList1)
 	EndIf
 	
+	; Unbound
+	; This mod skips the main quest up to 'Dragon Rising'
+	; Original mod had incomplete support for unbound
+	;
+	; SR_NewStartup_Message checked for MQ101 stage 900, which is never set with reborn
+	; MQ103 is missing a check entirely, MQ104 may run before startup check and still increments fame
+	; Thane appears to be using the vanilla system (favor253)
+	; Don't need to disable dragonborn comments as conditions check for at least MQ105Ustengrav
+	If IsModLoaded("Skyrim Unbound.esp", 0x000D62) ; SkyrimUnbound quest
+		SR_PluginEnabled_SkyrimUnbound.SetValue(1.0)
+	Else
+		SR_PluginEnabled_SkyrimUnbound.SetValue(0.0)
+	EndIf
+	
 	; Handle updates
-	If version < 2
+	If version < 3
 		If version == 1
 			Update_2()
+		ElseIf version == 2
+			Update_3()
 		EndIf
 	EndIf
 EndFunction
@@ -98,6 +115,8 @@ EndFunction
 EndProperty
 
 ; --------- UPDATE FUNCTIONS -------------
+
+SR_RQC_SCR Property SR_RQC_QST Auto
 
 Function Update_2()
 	Debug.Trace("SRT: Updating v1 -> v2")
@@ -126,5 +145,39 @@ Function Update_2()
 ;	SR_RQC_QST.CrimeMurdersSeen -= 1.0
 
 
-	Debug.Notification("SRT: Updates complete")
+	;Debug.Notification("SRT: Updates complete")
+	;version = 2
+	Update_3()
+EndFunction
+
+; Should be safer than checking quest stages
+Quest Property SR_RQC_QST_MainAndSideQuestBundle Auto
+SR_RQC_SCR_Favor253 Property SR_RQC_QST_Favor253 Auto
+GlobalVariable property SR_MCM_Factions_Thane_Whiterun auto
+
+Function Update_3()
+	Debug.Trace("SRT: Updating v2 -> v3")
+	
+	; Fix reputation from skyrim unbound
+	If SR_PluginEnabled_SkyrimUnbound.GetValue() == 1.0
+		If (SR_RQC_QST_MainAndSideQuestBundle As SR_RQC_SCR_MQ103).GetState() == "MQ103QuestChecked"
+			SR_RQC_QST.QuestDependability -= 1
+			Debug.Trace("Reverted reputation from MQ103")
+		EndIf
+		If (SR_RQC_QST_MainAndSideQuestBundle As SR_RQC_SCR_MQ104).GetState() == "MQ104QuestChecked"
+			SR_RQC_QST.QuestFame -= 3
+			SR_RQC_QST.QuestAedric -= 1
+			SR_RQC_QST.QuestDependability -= 2
+			Debug.Trace("Reverted reputation from MQ104")
+			If SR_RQC_QST_Favor253.GetState() == "Favor253QuestUnchecked" ; Not thane
+				SR_MCM_Factions_Thane_Whiterun.SetValue(0.0)
+				Debug.Trace("Reverted whiterun thane status")
+			EndIf
+		EndIf
+	Else
+		Debug.Trace("Skyirm unbound not installed")
+	EndIf
+	
+	version = 3
+	Debug.Trace("SRT: Updates complete")
 EndFunction
