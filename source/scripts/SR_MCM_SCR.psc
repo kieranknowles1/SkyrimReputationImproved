@@ -606,20 +606,52 @@ endEvent
 ; PAGE DISPLAY EVENTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Function InstallGlobal(String compatModName, GlobalVariable modGlobal)
-{ Show if a mod is installed based on a global }
-	Bool installed
-	If modGlobal.GetValue() == 1.0
-		installed = True
+Int Function AddBoolGlobal(String toggleName, GlobalVariable booleanGlobal)
+{ Use a global as a boolean for a toggle option }
+	Bool enabled
+	If booleanGlobal.GetValue() == 1.0
+		enabled = True
 	Else
-		installed = False
+		enabled = False
 	EndIf
 	
-	AddToggleOption(compatModName, installed, OPTION_FLAG_DISABLED)
+	Return AddToggleOption(toggleName, enabled)
 EndFunction
 
 GlobalVariable Property SR_PluginEnabled_SkyrimUnbound Auto
+Int srt_iUnbound
+
 GlobalVariable Property SRTUseGDO Auto
+Int srt_iGDO
+
+FormList Property SRTGreyCowlList Auto
+Int srt_iGreyCowl
+
+GlobalVariable Property SRTFameMult Auto
+GlobalVariable Property SRTAedricMult Auto
+GlobalVariable Property SRTDaedricMult Auto
+GlobalVariable Property SRTDependabilityMult Auto
+GlobalVariable Property SRTAmbitionMult Auto
+GlobalVariable Property SRTLawMult Auto
+GlobalVariable Property SRTCrimeMult Auto
+GlobalVariable Property SRTVampireMult Auto
+GlobalVariable Property SRTWerewolfMult Auto
+GlobalVariable Property SRTRacismMult Auto
+
+GlobalVariable Property SRTLoadScreens Auto
+
+Int srt_iFameMult
+Int srt_iAedricMult
+Int srt_iDaedricMult
+Int srt_iDependabilityMult
+Int srt_iAmbitionMult
+Int srt_iLawMult
+Int srt_iCrimeMult
+Int srt_iVampireMult
+Int srt_iWerewolfMult
+Int srt_iRacismMult
+
+Int srt_iLoadScreens
 
 ; @implements SKI_ConfigBase
 event OnPageReset(string a_page)
@@ -934,6 +966,18 @@ event OnPageReset(string a_page)
 		iOverrideCollegeMisc				= AddToggleOption("Misc. College Quests", bOverrideCollegeMisc)
 		iOverrideArcaneMastery				= AddToggleOption("Arcane Mastery", bOverrideArcaneMastery)
 		AddEmptyOption()
+		
+		AddHeaderOption("Stat Multipliers")
+		srt_iFameMult						= AddSliderOption("Fame", SRTFameMult.GetValue(), "{1}")
+		srt_iAedricMult						= AddSliderOption("Aedric", SRTAedricMult.GetValue(), "{1}")
+		srt_iDaedricMult					= AddSliderOption("Daedric ", SRTDaedricMult.GetValue(), "{1}") ; Intentional space due to case insensitive strings
+		srt_iDependabilityMult				= AddSliderOption("Dependability", SRTDependabilityMult.GetValue(), "{1}")
+		srt_iAmbitionMult					= AddSliderOption("Ambition", SRTAmbitionMult.GetValue(), "{1}")
+		srt_iLawMult						= AddSliderOption("Law", SRTLawMult.GetValue(), "{1}")
+		srt_iCrimeMult						= AddSliderOption("Crime", SRTCrimeMult.GetValue(), "{1}")
+		srt_iVampireMult					= AddSliderOption("Vampirism", SRTVampireMult.GetValue(), "{1}")
+		srt_iWerewolfMult					= AddSliderOption("Lycanthropy", SRTWerewolfMult.GetValue(), "{1}")
+;		srt_iRacismMult						= AddSliderOption("Racism", SRTRacismMult.GetValue(), "{1}")
 
 	Elseif (a_page == "Control Panel")
 		SetSliderValues()
@@ -1064,12 +1108,19 @@ event OnPageReset(string a_page)
 				
 		AddHeaderOption("Miscellaneous")
 		iSlowCalculations 			= AddToggleOption("Slower Reputation Calc.", bSlowCalculations)
+		
+		srt_iLoadScreens			= AddBoolGlobal("Loading Screens", SRTLoadScreens)
 		AddEmptyOption()
 		
 		; Improvements - Show installed mods
 		AddHeaderOption("Detected Mods")
-		InstallGlobal("Skyrim Unbound", SR_PluginEnabled_SkyrimUnbound)
-		InstallGlobal("Guard Dialogue Overhaul", SRTUseGDO)
+		srt_iGDO = AddBoolGlobal("Guard Dialogue Overhaul", SRTUseGDO)
+		
+		Bool greyCowlInstalled = SRTGreyCowlList.GetSize() > 0
+		srt_iGreyCowl = AddToggleOption("Gray Cowl of Nocturnal", greyCowlInstalled)
+		
+		
+		srt_iUnbound = AddBoolGlobal("Skyrim Unbound", SR_PluginEnabled_SkyrimUnbound)
 		
 		SetCursorPosition(1)
 		
@@ -1089,8 +1140,16 @@ endevent
 		
 event OnOptionSelect(int a_option)
 	{Called when the user selects a non-dialog option}
-
-	if (a_option == iAura_Vampire)
+	
+	If a_option == srt_iLoadScreens
+		If SRTLoadScreens.GetValue() == 0.0
+			SRTLoadScreens.SetValue(1.0)
+			SetToggleOptionValue(a_option, True)
+		Else
+			SRTLoadScreens.SetValue(0.0)
+			SetToggleOptionValue(a_option, False)
+		EndIf
+	ElseIf (a_option == iAura_Vampire)
 		bAura_Vampire = !bAura_Vampire
 		SetToggleOptionValue(a_option, bAura_Vampire)
 		if(SR_MCM_DaedricAuras_Vampire.GetValue() == 0)
@@ -2843,114 +2902,145 @@ event OnOptionSliderOpen(int a_option)
 	int TimesSpottedWerewolfMax = SR_RQC_QST.TimesSpottedWerewolfMax as int
 	int WerewolfVillagerMax 	= SR_RQC_QST.WerewolfVillagerMax as int
 	int WerewolfGuardMax 		= SR_RQC_QST.WerewolfGuardMax as int
-	if (a_option == iSliderDragonKills)
+	
+	SetSliderDialogDefaultValue(0) ; This was duplicated for all options
+	
+	If a_option == srt_iFameMult
+		SetSliderDialogStartValue(SRTFameMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iAedricMult
+		SetSliderDialogStartValue(SRTAedricMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iDaedricMult
+		SetSliderDialogStartValue(SRTDaedricMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iDependabilityMult
+		SetSliderDialogStartValue(SRTDependabilityMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iAmbitionMult
+		SetSliderDialogStartValue(SRTAmbitionMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iCrimeMult
+		SetSliderDialogStartValue(SRTCrimeMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iLawMult
+		SetSliderDialogStartValue(SRTLawMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iVampireMult
+		SetSliderDialogStartValue(SRTVampireMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+	ElseIf a_option == srt_iWerewolfMult
+		SetSliderDialogStartValue(SRTWerewolfMult.GetValue())
+		SetSliderDialogDefaultValue(1)
+		SetSliderDialogRange(0, 2)
+		SetSliderDialogInterval(0.1)
+;	ElseIf a_option == srt_iRacismMult
+;		SetSliderDialogStartValue(SRTRacismMult.GetValue())
+;		SetSliderDialogDefaultValue(1)
+;		SetSliderDialogRange(0, 2)
+;		SetSliderDialogInterval(0.1)
+
+	
+	
+	ElseIf (a_option == iSliderDragonKills)
 		SetSliderDialogStartValue(fSliderDragonKills)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, DragonKillsMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderDragonPriestKills)
 		SetSliderDialogStartValue(fSliderDragonPriestKills)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, DragonPriestKillsMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderBanditKills)
 		SetSliderDialogStartValue(fSliderBanditKills)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, BanditsKilledMax)
 		SetSliderDialogInterval(10)
 	elseif (a_option == iSliderForswornKills)
 		SetSliderDialogStartValue(fSliderForswornKills)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, ForswornKillerMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderWizardKills)
 		SetSliderDialogStartValue(fSliderWizardKills)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, WizardKillerMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderWitchKills)
 		SetSliderDialogStartValue(fSliderWitchKills)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, WitchKillerMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderNecroTImes)
 		SetSliderDialogStartValue(fSliderNecroTImes)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, ZombieTimeMax)
-		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderBlackSoulTrap)
 		SetSliderDialogStartValue(fSliderBlackSoulTrap)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, BlackSoulTrapMax)
-		SetSliderDialogInterval(1)	
 	elseif (a_option == iSliderCannibalFeed)
 		SetSliderDialogStartValue(fSliderCannibalFeed)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, CannibalFeedMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderCharityAdded)
 		SetSliderDialogStartValue(fSliderCharityAdded)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, CharityMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderSeenMurders)
 		SetSliderDialogStartValue(fSliderSeenMurders)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, SpottedMurdersMax)
-		SetSliderDialogInterval(1)	
 	elseif (a_option == iSliderSeenAssaults)
 		SetSliderDialogStartValue(fSliderSeenAssaults)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, SpottedAssaultsMax)
 		SetSliderDialogInterval(1)		
 	elseif (a_option == iSliderSeenTheft)
 		SetSliderDialogStartValue(fSliderSeenTheft)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, SpottedPettyCrimeMax)
 		SetSliderDialogInterval(1)	
 	elseif (a_option == iSliderVampiricSpellSeen)
 		SetSliderDialogStartValue(fSliderVampiricSpellSeen)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, VampiricSpellSeenMax)
 		SetSliderDialogInterval(1)	
 	elseif (a_option == iSliderVampireLordTrans)
 		SetSliderDialogStartValue(fSliderVampireLordTrans)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, VampireLordTransformationMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderVampireLordSeen)
 		SetSliderDialogStartValue(fSliderVampireLordSeen)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, VampireLordSeenMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderVampireComments)
 		SetSliderDialogStartValue(fSliderVampireComments)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, VampireVillagerMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderVampireGuard)
 		SetSliderDialogStartValue(fSliderVampireGuard)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, VampireGuardMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderWerewolfSeen)
 		SetSliderDialogStartValue(fSliderWerewolfSeen)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, TimesSpottedWerewolfMax)
 		SetSliderDialogInterval(1)		
 	elseif (a_option == iSliderWerewolfFeeds)
 		SetSliderDialogStartValue(fSliderWerewolfFeeds)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, WerewolfFeedsMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderWerewolfComments)
 		SetSliderDialogStartValue(fSliderWerewolfComments)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, WerewolfVillagerMax)
 		SetSliderDialogInterval(1)
 	elseif (a_option == iSliderWerewolfGuard)
 		SetSliderDialogStartValue(fSliderWerewolfGuard)
-		SetSliderDialogDefaultValue(0)
 		SetSliderDialogRange(0, WerewolfGuardMax)
 		SetSliderDialogInterval(1)
 	endIf
@@ -2958,7 +3048,40 @@ endEvent
 
 event OnOptionSliderAccept(int a_option, float a_value)
 	{Called when the user accepts a new slider value}
-	if (a_option == iSliderDragonKills)
+	
+	If a_option == srt_iFameMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTFameMult.SetValue(a_value)
+	ElseIf a_option == srt_iAedricMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTAedricMult.SetValue(a_value)
+	ElseIf a_option == srt_iDaedricMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTDaedricMult.SetValue(a_value)
+	ElseIf a_option == srt_iDependabilityMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTDependabilityMult.SetValue(a_value)
+	ElseIf a_option == srt_iAmbitionMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTAmbitionMult.SetValue(a_value)
+	ElseIf a_option == srt_iCrimeMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTCrimeMult.SetValue(a_value)
+	ElseIf a_option == srt_iLawMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTLawMult.SetValue(a_value)
+	ElseIf a_option == srt_iVampireMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTVampireMult.SetValue(a_value)
+	ElseIf a_option == srt_iWerewolfMult
+		SetSliderOptionValue(a_option, a_value, "{1}")
+		SRTWerewolfMult.SetValue(a_value)
+;	ElseIf a_option == srt_iRacismMult
+;		SetSliderOptionValue(a_option, a_value, "{1}")
+;		SRTRacismMult.SetValue(a_value)
+	
+	
+	ElseIf (a_option == iSliderDragonKills)
 		fSliderDragonKills = a_value
 		float DragonKills = (a_value)
 		SetSliderOptionValue(a_option, a_value, "{0}")
@@ -3104,7 +3227,21 @@ endEvent
 event OnOptionHighlight(int a_option)
 	{Called when the user highlights an option}
 
-	If (a_option == iReputationStatus)
+	If a_option == srt_iGDO
+		SetInfoText("Remove duplicate dialogue for thanes if GDO is installed")
+	ElseIf a_option == srt_iGreyCowl
+		SetInfoText("Wearing the cowl will hide your identity")
+	ElseIf a_option == srt_iUnbound
+		SetInfoText("Prevent reputation gain from quests skipped by Skyirm Unbound")
+	ElseIf a_option == srt_iAedricMult || a_option == srt_iDaedricMult || a_option == srt_iDependabilityMult || a_option == srt_iAmbitionMult || a_option == srt_iLawMult || a_option == srt_iCrimeMult || a_option == srt_iVampireMult || a_option == srt_iWerewolfMult 
+		SetInfoText("Multiplier for the influence of the selected stat on your reputation")
+	ElseIf a_option == srt_iFameMult
+		SetInfoText("Multiplier for total fame")
+;	Elseif a_option == srt_iRacismMult
+;		SetInfoText("Multiplier for race based reputation")
+	ElseIf a_option == srt_iLoadScreens
+		SetInfoText("Enable loading screens added by Skyrim Reputation")
+	ElseIf (a_option == iReputationStatus)
 		SetInfoText("(Worst)  Feared  |  Hated  |  Disliked  |  Unknown/Neutral  |  Liked  |  Admired  |  Hero  (Best)")
 	elseIf (a_option == iReputationLevel)
 		SetInfoText("MAXIMUM fame/notoriety lvl: 1 = Unknown | 2 = Liked/Disliked | 3 = Admired/Hated | 4 = Hero/Feared")
@@ -5763,6 +5900,19 @@ Function BeginLoadPreset()
 	bEnableCheats = fiss.loadBool("EnableCheats")
 	CheatsEnabled = fiss.loadInt("ManualControls")
 	
+	; FISS always uses 0 as a default value so leaving this commented out for compatability with existing presets
+;	SRTFameMult.SetValue(fiss.loadFloat("SRTFameMult"))
+;	SRTAedricMult.SetValue(fiss.loadFloat("SRTAedricMult"))
+;	SRTDaedricMult.SetValue(fiss.loadFloat("SRTDaedricMult"))
+;	SRTDependabilityMult.SetValue(fiss.loadFloat("SRTDependabilityMult"))
+;	SRTAmbitionMult.SetValue(fiss.loadFloat("SRTAmbitionMult"))
+;	SRTLawMult.SetValue(fiss.loadFloat("SRTLawMult"))
+;	SRTCrimeMult.SetValue(fiss.loadFloat("SRTCrimeMult"))
+;	SRTVampireMult.SetValue(fiss.loadFloat("SRTVampireMult"))
+;	SRTWerewolfMult.SetValue(fiss.loadFloat("SRTWerewolfMult"))
+	
+;	SRTLoadScreens.SetValue(fiss.loadFloat("SRTLoadScreens"))
+	
 	string loadResult = fiss.endLoad()	; check the result
 	If (loadResult != "")
 		ShowMessage("Error reading preset file.")
@@ -5880,6 +6030,18 @@ Function BeginSavePreset()
 	fiss.saveBool("OverrideMaxValueCap", bOverrideMaxValueCap)
 	fiss.saveBool("EnableCheats", bEnableCheats)
 	fiss.saveInt("ManualControls", CheatsEnabled)
+	
+	fiss.saveFloat("SRTFameMult", SRTFameMult.GetValue())
+	fiss.saveFloat("SRTAedricMult", SRTAedricMult.GetValue())
+	fiss.saveFloat("SRTDaedricMult", SRTDaedricMult.GetValue())
+	fiss.saveFloat("SRTDependabilityMult", SRTDependabilityMult.GetValue())
+	fiss.saveFloat("SRTAmbitionMult", SRTAmbitionMult.GetValue())
+	fiss.saveFloat("SRTLawMult", SRTLawMult.GetValue())
+	fiss.saveFloat("SRTCrimeMult", SRTCrimeMult.GetValue())
+	fiss.saveFloat("SRTVampireMult", SRTVampireMult.GetValue())
+	fiss.saveFloat("SRTWerewolfMult", SRTWerewolfMult.GetValue())
+
+	fiss.saveFloat("SRTLoadScreens", SRTLoadScreens.GetValue())
 	
 	string saveResult = fiss.endSave()	
 	; check the result
