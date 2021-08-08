@@ -23,7 +23,7 @@ Scriptname SR_MCM_SCR extends SKI_ConfigBase
 ; 11 - Improved 1.3
 
 int function GetVersion()
-	return 10
+	return 11
 endFunction
 
 ; ---------- TWEAKS -----------
