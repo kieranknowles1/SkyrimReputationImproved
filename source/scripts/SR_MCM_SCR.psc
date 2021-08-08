@@ -20,6 +20,8 @@ Scriptname SR_MCM_SCR extends SKI_ConfigBase
 ; 9 - Version 2.3
 ; 10 - Version 2.4
 
+; 11 - Improved 1.3
+
 int function GetVersion()
 	return 10
 endFunction
@@ -5810,6 +5812,10 @@ Function BeginLoadPreset()
 	EndIf
 
 	fiss.beginLoad("SkyrimReputationPresets.xml")
+	
+	Int version = fiss.loadInt("SRTVersion")
+	Debug.Trace("Preset saved in version " + version)
+	
 	SR_MCM_Reputation_Message.SetValue(fiss.loadInt("Reputation_Message"))
 	SR_MCM_DaedricAuras_Vampire.SetValue(fiss.loadInt("DaedricAuras_Vampire"))
 	SR_MCM_DaedricAuras_Werewolf.SetValue(fiss.loadInt("DaedricAuras_Werewolf"))
@@ -5900,18 +5906,19 @@ Function BeginLoadPreset()
 	bEnableCheats = fiss.loadBool("EnableCheats")
 	CheatsEnabled = fiss.loadInt("ManualControls")
 	
-	; FISS always uses 0 as a default value so leaving this commented out for compatability with existing presets
-;	SRTFameMult.SetValue(fiss.loadFloat("SRTFameMult"))
-;	SRTAedricMult.SetValue(fiss.loadFloat("SRTAedricMult"))
-;	SRTDaedricMult.SetValue(fiss.loadFloat("SRTDaedricMult"))
-;	SRTDependabilityMult.SetValue(fiss.loadFloat("SRTDependabilityMult"))
-;	SRTAmbitionMult.SetValue(fiss.loadFloat("SRTAmbitionMult"))
-;	SRTLawMult.SetValue(fiss.loadFloat("SRTLawMult"))
-;	SRTCrimeMult.SetValue(fiss.loadFloat("SRTCrimeMult"))
-;	SRTVampireMult.SetValue(fiss.loadFloat("SRTVampireMult"))
-;	SRTWerewolfMult.SetValue(fiss.loadFloat("SRTWerewolfMult"))
-	
-;	SRTLoadScreens.SetValue(fiss.loadFloat("SRTLoadScreens"))
+	If version >= 11
+		SRTFameMult.SetValue(fiss.loadFloat("SRTFameMult"))
+		SRTAedricMult.SetValue(fiss.loadFloat("SRTAedricMult"))
+		SRTDaedricMult.SetValue(fiss.loadFloat("SRTDaedricMult"))
+		SRTDependabilityMult.SetValue(fiss.loadFloat("SRTDependabilityMult"))
+		SRTAmbitionMult.SetValue(fiss.loadFloat("SRTAmbitionMult"))
+		SRTLawMult.SetValue(fiss.loadFloat("SRTLawMult"))
+		SRTCrimeMult.SetValue(fiss.loadFloat("SRTCrimeMult"))
+		SRTVampireMult.SetValue(fiss.loadFloat("SRTVampireMult"))
+		SRTWerewolfMult.SetValue(fiss.loadFloat("SRTWerewolfMult"))
+		
+		SRTLoadScreens.SetValue(fiss.loadFloat("SRTLoadScreens"))
+	EndIf
 	
 	string loadResult = fiss.endLoad()	; check the result
 	If (loadResult != "")
@@ -5940,6 +5947,8 @@ Function BeginSavePreset()
 	EndIf
 
 	fiss.beginSave("SkyrimReputationPresets.xml", "SkyrimReputation")
+	
+	fiss.saveInt("SRTVersion", GetVersion())
 
 	fiss.saveInt("Reputation_Message", SR_MCM_Reputation_Message.GetValue() as int)
 	fiss.saveInt("DaedricAuras_Vampire", SR_MCM_DaedricAuras_Vampire.GetValue() as int)
