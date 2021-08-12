@@ -600,6 +600,7 @@ event OnConfigInit()
 	_VampWereDifficultyList[1] = "Regular"
 	_VampWereDifficultyList[2] = "Oblivious"
 	
+	; NOTE - Can't auto load config as FISS isn't thread safe
 	
 endEvent
 
