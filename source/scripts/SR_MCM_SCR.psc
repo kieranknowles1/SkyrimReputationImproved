@@ -576,6 +576,8 @@ bool		bThaneWhiterun						= False
 bool		bSlowCalculations					= False
 bool		bMoonlightTales						= False
 
+String Property SRTPresetName = "Skyrim Reputation/preset.json" AutoReadOnly
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; INITIALIZATION
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -600,8 +602,17 @@ event OnConfigInit()
 	_VampWereDifficultyList[1] = "Regular"
 	_VampWereDifficultyList[2] = "Oblivious"
 	
-	; NOTE - Can't auto load config as FISS isn't thread safe
+	; NOTE - Can't auto load config with FISS as it isn't thread safe
 	
+	If JContainers.isInstalled() ; If JContainers is installed
+		Int jBackup = JValue.readFromFile(JContainers.userDirectory() + SRTPresetName)
+		If JValue.isExists(jBackup) ; And there is a preset
+			If JMap.getInt(jBackup, "SRTAutoLoad") ; And it's set to automatically load
+				; Load it
+				LoadJContainers(false)
+			EndIf
+		EndIf
+	EndIf
 endEvent
 
 
@@ -655,6 +666,13 @@ Int srt_iWerewolfMult
 Int srt_iRacismMult
 
 Int srt_iLoadScreens
+
+Int srt_iJSave
+Int srt_iJLoad
+
+
+Int srt_iJAutoLoad
+Bool srt_bAutoLoadEnabled
 
 ; @implements SKI_ConfigBase
 event OnPageReset(string a_page)
@@ -1127,13 +1145,23 @@ event OnPageReset(string a_page)
 		
 		SetCursorPosition(1)
 		
+		Bool jContainersInstalled = JContainers.IsInstalled()
+
 		If fiss
-			AddHeaderOption("Presets")
+			AddHeaderOption("FISS ") ; More case insensitive strings
 			OID_LoadPreset = AddTextOption("Load Preset","")
 			OID_SavePreset = AddTextOption("Save Current Settings","")
-			AddEmptyOption()	
-		endif
-		
+			AddEmptyOption()
+		EndIf
+
+		If jContainersInstalled
+			AddHeaderOption("JContainers")
+
+			srt_iJAutoLoad = AddToggleOption("Load Automatically", srt_bAutoLoadEnabled)
+			srt_iJLoad = AddTextOption("Load Preset", "")
+			srt_iJSave = AddTextOption("Save Current Settings", "")
+		EndIf
+
 	EndIf
 endevent
 
@@ -1152,6 +1180,13 @@ event OnOptionSelect(int a_option)
 			SRTLoadScreens.SetValue(0.0)
 			SetToggleOptionValue(a_option, False)
 		EndIf
+	ElseIf a_option == srt_iJAutoLoad
+		srt_bAutoLoadEnabled = !srt_bAutoLoadEnabled
+		SetToggleOptionValue(a_option, srt_bAutoLoadEnabled)
+	ElseIf a_option == srt_iJSave
+		SaveJContainers()
+	ElseIf a_option == srt_iJLoad
+		LoadJContainers()
 	ElseIf (a_option == iAura_Vampire)
 		bAura_Vampire = !bAura_Vampire
 		SetToggleOptionValue(a_option, bAura_Vampire)
@@ -3586,10 +3621,16 @@ event OnOptionHighlight(int a_option)
 	elseIf (a_option == iForceRep)
 		SetInfoText("If you made input variable changes and feel impatient, press to force a new reputation calculation")
 	elseIf (a_option == OID_LoadPreset)
-			SetInfoText("With File Access Interface for Skyrim, you can load saved settings to overwrite current settings")
+		SetInfoText("With File Access Interface for Skyrim, you can load saved settings to overwrite current settings")
 	elseIf (a_option == OID_SavePreset)
-			SetInfoText("With File Access Interface for Skyrim, you can save your settings for use between saves")
-		
+		SetInfoText("With File Access Interface for Skyrim, you can save your settings for use between saves")
+	ElseIf a_option == srt_iJSave
+		SetInfoText("With JContainers, you can save your settings for use between saves")
+	ElseIf a_option == srt_iJLoad
+		SetInfoText("With JContainers, you can load saved settings to overwrite current settings")
+	ElseIf a_option == srt_iJAutoLoad
+		SetInfoText("Automatically load your JContainers preset when starting a new game")
+
 	elseIf (a_option == iFameCounterUp)
 		SetInfoText("Click to manually increase the Fame score")
 	elseIf (a_option == iAedricCounterUp)
@@ -5795,8 +5836,271 @@ Function SetCounterBalanceValuesMageStat(float Percent); Percent of Value to add
 EndFunction
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; LOAD AND SAVE FUNCTIONS FOR FISS - FILE ACCESS INTERFACE FOR SKYRIM SCRIPTS PLUGIN
+; LOAD AND SAVE FUNCTIONS FOR FISS - FILE ACCESS INTERFACE FOR SKYRIM SCRIPTS PLUGIN and JContainers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; FISS isn't thread safe, so using JContiners to auto load
+; FISS support is kept for backwards compatability
+
+Function LoadJContainers(Bool prompt = true)
+
+	If prompt
+		if !ShowMessage("Loading this preset will overwrite the current settings.", true, "Load", "Cancel")
+			return
+		endif
+
+		; Double check that JContainers is installed
+		If !JContainers.IsInstalled()
+			Debug.MessageBox("JContainers not installed. Loading disabled.")
+			Return
+		EndIf
+	EndIf
+
+	Int jBackup = JValue.readFromFile(JContainers.userDirectory() + SRTPresetName)
+	
+	; Check that the preset exists
+	If prompt && !JValue.isExists(jBackup)
+		ShowMessage("Error reading JContainers preset.")
+		Return
+	EndIf
+
+	Int version = JMap.getInt(jBackup, "SRTVersion")
+	Debug.Trace("Preset saved in version " + version)
+	
+	SR_MCM_Reputation_Message.SetValue(JMap.getInt(jBackup, "Reputation_Message"))
+	SR_MCM_DaedricAuras_Vampire.SetValue(JMap.getInt(jBackup, "DaedricAuras_Vampire"))
+	SR_MCM_DaedricAuras_Werewolf.SetValue(JMap.getInt(jBackup, "DaedricAuras_Werewolf"))
+	SR_MCM_WiComment_Feared_Infamy.SetValue(JMap.getInt(jBackup, "WiComment_Feared_Infamy"))
+	SR_MCM_Perks_Allure.SetValue(JMap.getInt(jBackup, "Perks_Allure"))
+	SR_MCM_Perks_Fence.SetValue(JMap.getInt(jBackup, "Perks_Fence"))
+	SR_MCM_Perks_Intimidate.SetValue(JMap.getInt(jBackup, "Perks_Intimidate"))
+	SR_MCM_Perks_PriceChanges.SetValue(JMap.getInt(jBackup, "Perks_PriceChanges"))
+	SR_MCM_Factions_Companions.SetValue(JMap.getInt(jBackup, "Factions_Companions"))
+	SR_MCM_Factions_DarkBrotherhood.SetValue(JMap.getInt(jBackup, "Factions_DarkBrotherhood"))
+	SR_MCM_Factions_Dawnguard.SetValue(JMap.getInt(jBackup, "Factions_Dawnguard"))
+	SR_MCM_Factions_Forsworn.SetValue(JMap.getInt(jBackup, "Factions_Forsworn"))
+	SR_MCM_Factions_MageGuild.SetValue(JMap.getInt(jBackup, "Factions_MageGuild"))
+	SR_MCM_Factions_Thalmor.SetValue(JMap.getInt(jBackup, "Factions_Thalmor")) 
+	SR_MCM_Factions_ThievesGuild.SetValue(JMap.getInt(jBackup, "Factions_ThievesGuild"))
+	SR_MCM_Factions_VigilOfStendarr.SetValue(JMap.getInt(jBackup, "Factions_VigilOfStendarr"))
+	SR_MCM_Factions_CourierNotes.SetValue(JMap.getInt(jBackup, "Factions_CourierNotes"))
+	SR_MCM_WiComment_Unknown.SetValue(JMap.getInt(jBackup, "WiComment_Unknown"))
+	SR_MCM_WiComment_Bad.SetValue(JMap.getInt(jBackup, "WiComment_Bad"))
+	SR_MCM_WiComment_Good.SetValue(JMap.getInt(jBackup, "WiComment_Good"))
+	SR_MCM_WiComment_Feared.SetValue(JMap.getInt(jBackup, "WiComment_Feared"))
+	SR_MCM_WiComment_Child.SetValue(JMap.getInt(jBackup, "WiComment_Child"))
+	SR_MCM_WiComment_Thane.SetValue(JMap.getInt(jBackup, "WiComment_Thane"))
+	SR_MCM_WiComment_VampireWerewolf.SetValue(JMap.getInt(jBackup, "WiComment_VampireWerewolf"))
+	SR_MCM_WiComment_Guards.SetValue(JMap.getInt(jBackup, "WiComment_Guards"))
+	SR_MCM_WiComment_Feared_AiPackage.SetValue(JMap.getInt(jBackup, "WiComment_Feared_AiPackage"))
+	SR_MCM_WiComment_VampireWerewolf_Hostile.SetValue(JMap.getInt(jBackup, "WiComment_VampireWerewolf_Hostile"))
+	SR_MCM_Override_Locations.SetValue(JMap.getInt(jBackup, "Override_Locations"))
+	SR_MCM_Override_Dungeons.SetValue(JMap.getInt(jBackup, "Override_Dungeons"))
+	SR_MCM_Override_PeopleKills.SetValue(JMap.getInt(jBackup, "Override_PeopleKills"))
+	SR_MCM_Override_StoreInvestments.SetValue(JMap.getInt(jBackup, "Override_StoreInvestments"))
+	SR_MCM_Override_HousesOwned.SetValue(JMap.getInt(jBackup, "Override_HousesOwned"))
+	SR_MCM_Override_DragonsKilled.SetValue(JMap.getInt(jBackup, "Override_DragonsKilled"))
+	SR_MCM_Override_DragonPriestsKilled.SetValue(JMap.getInt(jBackup, "Override_DragonPriestsKilled"))
+	SR_MCM_Override_NecksBitten.SetValue(JMap.getInt(jBackup, "Override_NecksBitten"))
+	SR_MCM_Override_VampiricSpellSeen.SetValue(JMap.getInt(jBackup, "Override_VampiricSpellSeen"))
+	SR_MCM_Override_VampireLordTransformations.SetValue(JMap.getInt(jBackup, "Override_VampireLordTransformations"))
+	SR_MCM_Override_VampireLordSeen.SetValue(JMap.getInt(jBackup, "Override_VampireLordSeen"))
+	SR_MCM_Override_VampireComments.SetValue(JMap.getInt(jBackup, "Override_VampireComments"))
+	SR_MCM_Override_WerewolfMauls.SetValue(JMap.getInt(jBackup, "Override_WerewolfMauls"))
+	SR_MCM_Override_WerewolfTransformations.SetValue(JMap.getInt(jBackup, "Override_WerewolfTransformations"))
+	SR_MCM_Override_WerewolfFeeds.SetValue(JMap.getInt(jBackup, "Override_WerewolfFeeds"))
+	SR_MCM_Override_WerewolfSeen.SetValue(JMap.getInt(jBackup, "Override_WerewolfSeen"))
+	SR_MCM_Override_WerewolfComments.SetValue(JMap.getInt(jBackup, "Override_WerewolfComments"))
+	SR_MCM_Override_WerewolfVampireTimeDecreament.SetValue(JMap.getInt(jBackup, "Override_WerewolfVampireTimeDecreament"))
+	SR_MCM_Override_SeenCrimeTimeDecreament.SetValue(JMap.getInt(jBackup, "Override_SeenCrimeTimeDecreament"))
+	SR_MCM_Override_PettyCrimeSeen.SetValue(JMap.getInt(jBackup, "Override_PettyCrimeSeen"))
+	SR_MCM_Override_AssaultsSeen.SetValue(JMap.getInt(jBackup, "Override_AssaultsSeen"))
+	SR_MCM_Override_MurdersSeen.SetValue(JMap.getInt(jBackup, "Override_MurdersSeen"))
+	SR_MCM_Override_Murders.SetValue(JMap.getInt(jBackup, "Override_Murders"))
+	SR_MCM_Override_PocketsPicked.SetValue(JMap.getInt(jBackup, "Override_PocketsPicked"))
+	SR_MCM_Override_HorsesStolen.SetValue(JMap.getInt(jBackup, "Override_HorsesStolen"))
+	SR_MCM_Override_ItemsStolen.SetValue(JMap.getInt(jBackup, "Override_ItemsStolen"))
+	SR_MCM_Override_Trespasses.SetValue(JMap.getInt(jBackup, "Override_Trespasses"))
+	SR_MCM_Override_JailEscapes.SetValue(JMap.getInt(jBackup, "Override_JailEscapes"))
+	SR_MCM_Override_DaysJailed.SetValue(JMap.getInt(jBackup, "Override_DaysJailed"))
+	SR_MCM_Override_FinesPayed.SetValue(JMap.getInt(jBackup, "Override_FinesPayed"))
+	SR_MCM_Override_ThievesGuildMisc.SetValue(JMap.getInt(jBackup, "Override_ThievesGuildMisc"))
+	SR_MCM_Override_DarkBrotherhoodMisc.SetValue(JMap.getInt(jBackup, "Override_DarkBrotherhoodMisc"))
+	SR_MCM_Override_CompanionsMisc.SetValue(JMap.getInt(jBackup, "Override_CompanionsMisc"))
+	SR_MCM_Override_CollegeMisc.SetValue(JMap.getInt(jBackup, "Override_CollegeMisc"))
+	SR_MCM_Override_Brawls.SetValue(JMap.getInt(jBackup, "Override_Brawls"))
+	SR_MCM_Override_MiscQuests.SetValue(JMap.getInt(jBackup, "Override_MiscQuests"))
+	SR_MCM_Override_CivilWar.SetValue(JMap.getInt(jBackup, "Override_CivilWar"))
+	SR_MCM_Override_WarriorSkill.SetValue(JMap.getInt(jBackup, "Override_WarriorSkill"))
+	SR_MCM_Override_Persuasions.SetValue(JMap.getInt(jBackup, "Override_Persuasions"))
+	SR_MCM_Override_Intimidations.SetValue(JMap.getInt(jBackup, "Override_Intimidations"))
+	SR_MCM_Override_Bribes.SetValue(JMap.getInt(jBackup, "Override_Bribes"))
+	SR_MCM_Override_BooksRead.SetValue(JMap.getInt(jBackup, "Override_BooksRead"))
+	SR_MCM_Override_KillsUndead.SetValue(JMap.getInt(jBackup, "Override_KillsUndead"))
+	SR_MCM_Override_KillsDaedra.SetValue(JMap.getInt(jBackup, "Override_KillsDaedra"))
+	SR_MCM_Override_KillsBandits.SetValue(JMap.getInt(jBackup, "Override_KillsBandits"))
+	SR_MCM_Override_KillsWizards.SetValue(JMap.getInt(jBackup, "Override_KillsWizards"))
+	SR_MCM_Override_KillsWitches.SetValue(JMap.getInt(jBackup, "Override_KillsWitches"))
+	SR_MCM_Override_KillsForsworn.SetValue(JMap.getInt(jBackup, "Override_KillsForsworn"))
+	SR_MCM_Override_SoulsTrapped.SetValue(JMap.getInt(jBackup, "Override_SoulsTrapped"))
+	SR_MCM_Override_BlackSoulTraps.SetValue(JMap.getInt(jBackup, "Override_BlackSoulTraps"))
+	SR_MCM_Override_Necromancy.SetValue(JMap.getInt(jBackup, "Override_Necromancy"))
+	SR_MCM_Override_SeenNecroTimeDecreament.SetValue(JMap.getInt(jBackup, "Override_SeenNecroTimeDecreament"))
+	SR_MCM_Override_ArcaneMastery.SetValue(JMap.getInt(jBackup, "Override_ArcaneMastery"))
+	SR_MCM_Override_RestorationMagic.SetValue(JMap.getInt(jBackup, "Override_RestorationMagic"))
+	SR_MCM_Override_ConjugationMagic.SetValue(JMap.getInt(jBackup, "Override_ConjugationMagic"))
+	SR_MCM_Override_CannibalFeed.SetValue(JMap.getInt(jBackup, "Override_CannibalFeed"))
+	SR_MCM_Override_CharityAdded.SetValue(JMap.getInt(jBackup, "Override_CharityAdded"))
+	_curFameDifficulty = JMap.getInt(jBackup, "FameDifficulty")
+	_curVampWereDifficulty = JMap.getInt(jBackup, "VampWereDifficulty")
+	bOverrideMaxValueCap = JMap.getInt(jBackup, "OverrideMaxValueCap")
+	bEnableCheats = JMap.getInt(jBackup, "EnableCheats")
+	CheatsEnabled = JMap.getInt(jBackup, "ManualControls")
+	
+	; If version >= 11 ; JContainers supports default values
+	SRTFameMult.SetValue(JMap.getFlt(jBackup, "SRTFameMult", 1.0))
+	SRTAedricMult.SetValue(JMap.getFlt(jBackup, "SRTAedricMult", 1.0))
+	SRTDaedricMult.SetValue(JMap.getFlt(jBackup, "SRTDaedricMult", 1.0))
+	SRTDependabilityMult.SetValue(JMap.getFlt(jBackup, "SRTDependabilityMult", 1.0))
+	SRTAmbitionMult.SetValue(JMap.getFlt(jBackup, "SRTAmbitionMult", 1.0))
+	SRTLawMult.SetValue(JMap.getFlt(jBackup, "SRTLawMult", 1.0))
+	SRTCrimeMult.SetValue(JMap.getFlt(jBackup, "SRTCrimeMult", 1.0))
+	SRTVampireMult.SetValue(JMap.getFlt(jBackup, "SRTVampireMult, 1.0"))
+	SRTWerewolfMult.SetValue(JMap.getFlt(jBackup, "SRTWerewolfMult", 1.0))
+	
+	SRTLoadScreens.SetValue(JMap.getFlt(jBackup, "SRTLoadScreens", 1.0))
+	; EndIf
+
+	srt_bAutoLoadEnabled = JMap.getInt(jBackup, "SRTAutoLoad")
+	
+	If prompt
+		ShowMessage("Skyrim Reputation Preset loaded successfully", false, "Okay")
+	EndIf
+
+	ResetQuestForToggleGlobals()
+	SetOverrideMaxValueCap()
+	SetcurFameDifficulty()
+	SetcurVampWereDifficulty()
+EndFunction
+
+Function SaveJContainers()
+	if !ShowMessage("This will overwrite the existing preset with your current settings.", true, "Save", "Cancel")
+		return
+	endif
+
+	Int jBackup = JMap.object()
+
+	JMap.setInt(jBackup, "SRTVersion", GetVersion())
+
+	JMap.setInt(jBackup, "Reputation_Message", SR_MCM_Reputation_Message.GetValue() as int)
+	JMap.setInt(jBackup, "DaedricAuras_Vampire", SR_MCM_DaedricAuras_Vampire.GetValue() as int)
+	JMap.setInt(jBackup, "DaedricAuras_Werewolf", SR_MCM_DaedricAuras_Werewolf.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Feared_Infamy", SR_MCM_WiComment_Feared_Infamy.GetValue() as int)
+	JMap.setInt(jBackup, "Perks_Allure", SR_MCM_Perks_Allure.GetValue() as int)
+	JMap.setInt(jBackup, "Perks_Fence", SR_MCM_Perks_Fence.GetValue() as int)
+	JMap.setInt(jBackup, "Perks_Intimidate", SR_MCM_Perks_Intimidate.GetValue() as int)
+	JMap.setInt(jBackup, "Perks_PriceChanges", SR_MCM_Perks_PriceChanges.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_Companions", SR_MCM_Factions_Companions.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_DarkBrotherhood", SR_MCM_Factions_DarkBrotherhood.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_Dawnguard", SR_MCM_Factions_Dawnguard.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_Forsworn", SR_MCM_Factions_Forsworn.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_MageGuild", SR_MCM_Factions_MageGuild.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_Thalmor", SR_MCM_Factions_Thalmor.GetValue() as int) 
+	JMap.setInt(jBackup, "Factions_ThievesGuild", SR_MCM_Factions_ThievesGuild.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_VigilOfStendarr", SR_MCM_Factions_VigilOfStendarr.GetValue() as int)
+	JMap.setInt(jBackup, "Factions_CourierNotes", SR_MCM_Factions_CourierNotes.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Unknown", SR_MCM_WiComment_Unknown.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Bad", SR_MCM_WiComment_Bad.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Good", SR_MCM_WiComment_Good.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Feared", SR_MCM_WiComment_Feared.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Child", SR_MCM_WiComment_Child.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Thane", SR_MCM_WiComment_Thane.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_VampireWerewolf", SR_MCM_WiComment_VampireWerewolf.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Guards", SR_MCM_WiComment_Guards.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_Feared_AiPackage", SR_MCM_WiComment_Feared_AiPackage.GetValue() as int)
+	JMap.setInt(jBackup, "WiComment_VampireWerewolf_Hostile", SR_MCM_WiComment_VampireWerewolf_Hostile.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Locations", SR_MCM_Override_Locations.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Dungeons", SR_MCM_Override_Dungeons.GetValue() as int)
+	JMap.setInt(jBackup, "Override_PeopleKills", SR_MCM_Override_PeopleKills.GetValue() as int)
+	JMap.setInt(jBackup, "Override_StoreInvestments", SR_MCM_Override_StoreInvestments.GetValue() as int)
+	JMap.setInt(jBackup, "Override_HousesOwned", SR_MCM_Override_HousesOwned.GetValue() as int)
+	JMap.setInt(jBackup, "Override_DragonsKilled", SR_MCM_Override_DragonsKilled.GetValue() as int)
+	JMap.setInt(jBackup, "Override_DragonPriestsKilled", SR_MCM_Override_DragonPriestsKilled.GetValue() as int)
+	JMap.setInt(jBackup, "Override_NecksBitten", SR_MCM_Override_NecksBitten.GetValue() as int)
+	JMap.setInt(jBackup, "Override_VampiricSpellSeen", SR_MCM_Override_VampiricSpellSeen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_VampireLordTransformations", SR_MCM_Override_VampireLordTransformations.GetValue() as int)
+	JMap.setInt(jBackup, "Override_VampireLordSeen", SR_MCM_Override_VampireLordSeen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_VampireComments", SR_MCM_Override_VampireComments.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WerewolfMauls", SR_MCM_Override_WerewolfMauls.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WerewolfTransformations", SR_MCM_Override_WerewolfTransformations.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WerewolfFeeds", SR_MCM_Override_WerewolfFeeds.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WerewolfSeen", SR_MCM_Override_WerewolfSeen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WerewolfComments", SR_MCM_Override_WerewolfComments.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WerewolfVampireTimeDecreament", SR_MCM_Override_WerewolfVampireTimeDecreament.GetValue() as int)
+	JMap.setInt(jBackup, "Override_SeenCrimeTimeDecreament", SR_MCM_Override_SeenCrimeTimeDecreament.GetValue() as int)
+	JMap.setInt(jBackup, "Override_PettyCrimeSeen", SR_MCM_Override_PettyCrimeSeen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_AssaultsSeen", SR_MCM_Override_AssaultsSeen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_MurdersSeen", SR_MCM_Override_MurdersSeen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Murders", SR_MCM_Override_Murders.GetValue() as int)
+	JMap.setInt(jBackup, "Override_PocketsPicked", SR_MCM_Override_PocketsPicked.GetValue() as int)
+	JMap.setInt(jBackup, "Override_HorsesStolen", SR_MCM_Override_HorsesStolen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_ItemsStolen", SR_MCM_Override_ItemsStolen.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Trespasses", SR_MCM_Override_Trespasses.GetValue() as int)
+	JMap.setInt(jBackup, "Override_JailEscapes", SR_MCM_Override_JailEscapes.GetValue() as int)
+	JMap.setInt(jBackup, "Override_DaysJailed", SR_MCM_Override_DaysJailed.GetValue() as int)
+	JMap.setInt(jBackup, "Override_FinesPayed", SR_MCM_Override_FinesPayed.GetValue() as int)
+	JMap.setInt(jBackup, "Override_ThievesGuildMisc", SR_MCM_Override_ThievesGuildMisc.GetValue() as int)
+	JMap.setInt(jBackup, "Override_DarkBrotherhoodMisc", SR_MCM_Override_DarkBrotherhoodMisc.GetValue() as int)
+	JMap.setInt(jBackup, "Override_CompanionsMisc", SR_MCM_Override_CompanionsMisc.GetValue() as int)
+	JMap.setInt(jBackup, "Override_CollegeMisc", SR_MCM_Override_CollegeMisc.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Brawls", SR_MCM_Override_Brawls.GetValue() as int)
+	JMap.setInt(jBackup, "Override_MiscQuests", SR_MCM_Override_MiscQuests.GetValue() as int)
+	JMap.setInt(jBackup, "Override_CivilWar", SR_MCM_Override_CivilWar.GetValue() as int)
+	JMap.setInt(jBackup, "Override_WarriorSkill", SR_MCM_Override_WarriorSkill.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Persuasions", SR_MCM_Override_Persuasions.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Intimidations", SR_MCM_Override_Intimidations.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Bribes", SR_MCM_Override_Bribes.GetValue() as int)
+	JMap.setInt(jBackup, "Override_BooksRead", SR_MCM_Override_BooksRead.GetValue() as int)
+	JMap.setInt(jBackup, "Override_KillsUndead", SR_MCM_Override_KillsUndead.GetValue() as int)
+	JMap.setInt(jBackup, "Override_KillsDaedra", SR_MCM_Override_KillsDaedra.GetValue() as int)
+	JMap.setInt(jBackup, "Override_KillsBandits", SR_MCM_Override_KillsBandits.GetValue() as int)
+	JMap.setInt(jBackup, "Override_KillsWizards", SR_MCM_Override_KillsWizards.GetValue() as int)
+	JMap.setInt(jBackup, "Override_KillsWitches", SR_MCM_Override_KillsWitches.GetValue() as int)
+	JMap.setInt(jBackup, "Override_KillsForsworn", SR_MCM_Override_KillsForsworn.GetValue() as int)
+	JMap.setInt(jBackup, "Override_SoulsTrapped", SR_MCM_Override_SoulsTrapped.GetValue() as int)
+	JMap.setInt(jBackup, "Override_BlackSoulTraps", SR_MCM_Override_BlackSoulTraps.GetValue() as int)
+	JMap.setInt(jBackup, "Override_Necromancy", SR_MCM_Override_Necromancy.GetValue() as int)
+	JMap.setInt(jBackup, "Override_SeenNecroTimeDecreament", SR_MCM_Override_SeenNecroTimeDecreament.GetValue() as int)
+	JMap.setInt(jBackup, "Override_ArcaneMastery", SR_MCM_Override_ArcaneMastery.GetValue() as int)
+	JMap.setInt(jBackup, "Override_RestorationMagic", SR_MCM_Override_RestorationMagic.GetValue() as int)
+	JMap.setInt(jBackup, "Override_ConjugationMagic", SR_MCM_Override_ConjugationMagic.GetValue() as int)
+	JMap.setInt(jBackup, "Override_CannibalFeed", SR_MCM_Override_CannibalFeed.GetValue() as int)
+	JMap.setInt(jBackup, "Override_CharityAdded", SR_MCM_Override_CharityAdded.GetValue() as int)
+	JMap.setInt(jBackup, "FameDifficulty", _curFameDifficulty As Int)
+	JMap.setInt(jBackup, "VampWereDifficulty", _curVampWereDifficulty As Int)
+	JMap.setInt(jBackup, "OverrideMaxValueCap", bOverrideMaxValueCap As Int)
+	JMap.setInt(jBackup, "EnableCheats", bEnableCheats As Int)
+	JMap.setInt(jBackup, "ManualControls", CheatsEnabled As Int)
+	
+	JMap.setFlt(jBackup, "SRTFameMult", SRTFameMult.GetValue())
+	JMap.setFlt(jBackup, "SRTAedricMult", SRTAedricMult.GetValue())
+	JMap.setFlt(jBackup, "SRTDaedricMult", SRTDaedricMult.GetValue())
+	JMap.setFlt(jBackup, "SRTDependabilityMult", SRTDependabilityMult.GetValue())
+	JMap.setFlt(jBackup, "SRTAmbitionMult", SRTAmbitionMult.GetValue())
+	JMap.setFlt(jBackup, "SRTLawMult", SRTLawMult.GetValue())
+	JMap.setFlt(jBackup, "SRTCrimeMult", SRTCrimeMult.GetValue())
+	JMap.setFlt(jBackup, "SRTVampireMult", SRTVampireMult.GetValue())
+	JMap.setFlt(jBackup, "SRTWerewolfMult", SRTWerewolfMult.GetValue())
+
+	JMap.setFlt(jBackup, "SRTLoadScreens", SRTLoadScreens.GetValue())
+
+	JMap.setInt(jBackup, "SRTAutoLoad", srt_bAutoLoadEnabled As Int)
+
+	JValue.writeToFile(jBackup, JContainers.userDirectory() + SRTPresetName)
+
+	ShowMessage("Skyrim Reputation settings saved", false, "Okay")
+EndFunction
+
 
 Function BeginLoadPreset()
 	if !ShowMessage("Loading this preset will overwrite the current settings.", true, "Load", "Cancel")
