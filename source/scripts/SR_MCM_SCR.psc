@@ -650,7 +650,6 @@ GlobalVariable Property SRTLawMult Auto
 GlobalVariable Property SRTCrimeMult Auto
 GlobalVariable Property SRTVampireMult Auto
 GlobalVariable Property SRTWerewolfMult Auto
-GlobalVariable Property SRTRacismMult Auto
 
 GlobalVariable Property SRTLoadScreens Auto
 
@@ -663,7 +662,6 @@ Int srt_iLawMult
 Int srt_iCrimeMult
 Int srt_iVampireMult
 Int srt_iWerewolfMult
-Int srt_iRacismMult
 
 Int srt_iLoadScreens
 
@@ -998,7 +996,6 @@ event OnPageReset(string a_page)
 		srt_iCrimeMult						= AddSliderOption("Crime", SRTCrimeMult.GetValue(), "{1}")
 		srt_iVampireMult					= AddSliderOption("Vampirism", SRTVampireMult.GetValue(), "{1}")
 		srt_iWerewolfMult					= AddSliderOption("Lycanthropy", SRTWerewolfMult.GetValue(), "{1}")
-;		srt_iRacismMult						= AddSliderOption("Racism", SRTRacismMult.GetValue(), "{1}")
 
 	Elseif (a_page == "Control Panel")
 		SetSliderValues()
@@ -2987,15 +2984,7 @@ event OnOptionSliderOpen(int a_option)
 		SetSliderDialogStartValue(SRTWerewolfMult.GetValue())
 		SetSliderDialogDefaultValue(1)
 		SetSliderDialogRange(0, 2)
-		SetSliderDialogInterval(0.1)
-;	ElseIf a_option == srt_iRacismMult
-;		SetSliderDialogStartValue(SRTRacismMult.GetValue())
-;		SetSliderDialogDefaultValue(1)
-;		SetSliderDialogRange(0, 2)
-;		SetSliderDialogInterval(0.1)
-
-	
-	
+		SetSliderDialogInterval(0.1)	
 	ElseIf (a_option == iSliderDragonKills)
 		SetSliderDialogStartValue(fSliderDragonKills)
 		SetSliderDialogRange(0, DragonKillsMax)
@@ -3114,11 +3103,6 @@ event OnOptionSliderAccept(int a_option, float a_value)
 	ElseIf a_option == srt_iWerewolfMult
 		SetSliderOptionValue(a_option, a_value, "{1}")
 		SRTWerewolfMult.SetValue(a_value)
-;	ElseIf a_option == srt_iRacismMult
-;		SetSliderOptionValue(a_option, a_value, "{1}")
-;		SRTRacismMult.SetValue(a_value)
-	
-	
 	ElseIf (a_option == iSliderDragonKills)
 		fSliderDragonKills = a_value
 		float DragonKills = (a_value)
@@ -3275,8 +3259,6 @@ event OnOptionHighlight(int a_option)
 		SetInfoText("Multiplier for the influence of the selected stat on your reputation")
 	ElseIf a_option == srt_iFameMult
 		SetInfoText("Multiplier for total fame")
-;	Elseif a_option == srt_iRacismMult
-;		SetInfoText("Multiplier for race based reputation")
 	ElseIf a_option == srt_iLoadScreens
 		SetInfoText("Enable loading screens added by Skyrim Reputation")
 	ElseIf (a_option == iReputationStatus)
@@ -6223,6 +6205,8 @@ Function BeginLoadPreset()
 		SRTWerewolfMult.SetValue(fiss.loadFloat("SRTWerewolfMult"))
 		
 		SRTLoadScreens.SetValue(fiss.loadFloat("SRTLoadScreens"))
+
+		srt_bAutoLoadEnabled = fiss.loadBool("SRTAutoLoad") ; Unused with FISS, but kept for consistency
 	EndIf
 	
 	string loadResult = fiss.endLoad()	; check the result
@@ -6356,6 +6340,8 @@ Function BeginSavePreset()
 	fiss.saveFloat("SRTWerewolfMult", SRTWerewolfMult.GetValue())
 
 	fiss.saveFloat("SRTLoadScreens", SRTLoadScreens.GetValue())
+
+	fiss.saveBool("SRTAutoLoad", srt_bAutoLoadEnabled) ; Unused with FISS, but kept for consistency
 	
 	string saveResult = fiss.endSave()	
 	; check the result

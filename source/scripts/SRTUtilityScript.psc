@@ -32,6 +32,10 @@ Function TryAddForm(Form formToAdd, FormList destinationList)
 	EndIf
 EndFunction
 
+
+; 1 - Unreleased
+; 2 - 1.0
+; 3 - 1.2
 Int version = 3
 
 Event OnInit()
