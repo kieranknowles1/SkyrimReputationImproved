@@ -36,6 +36,7 @@ EndFunction
 ; 1 - Unreleased
 ; 2 - 1.0
 ; 3 - 1.2
+; 4 - 1.3.1
 Int version = 3
 
 Event OnInit()
@@ -51,11 +52,13 @@ Function Maintenance()
 	CheckMods()
 	
 	; Handle updates
-	If version < 3
+	If version < 4
 		If version == 1
 			Update_2()
 		ElseIf version == 2
 			Update_3()
+		ElseIf version == 3
+			Update_4()
 		EndIf
 	EndIf
 EndFunction
@@ -149,6 +152,8 @@ Function RetroFixes()
 	; This won't do anything unless papyrus extender is installed
 	SR_MCM_Override_BlackSoulTraps.SetValue(1.0)
 	SR_MCM_Override_CannibalFeed.SetValue(1.0)
+
+	MS02Fix()
 EndFunction
 
 Function Update_2()
@@ -198,7 +203,17 @@ Function Update_3()
 		Debug.Trace("Skyirm unbound not installed")
 	EndIf
 	
-	version = 3
+	;version = 3
+	;Debug.Trace("SRT: Updates complete")
+	Update_4()
+EndFunction
+
+Function Update_4()
+	Debug.Trace("SRT: Updating v3 -> v4")
+
+	MS02Fix()
+
+	version = 4
 	Debug.Trace("SRT: Updates complete")
 EndFunction
 
@@ -226,3 +241,23 @@ Function UnboundInstall()
 	EndIf
 EndFunction
 
+
+Quest Property MS02 Auto
+Faction Property DruadachRedoubtFaction Auto
+Faction Property PlayerFaction Auto
+Faction Property PlayerHorseFaction Auto
+Faction Property CurrentFollowerFaction Auto
+Faction Property CurrentHireling Auto
+
+Function MS02Fix()
+	; Due to a misunderstanding of OnInit, SR_Factions_Forsworn_Trackers run from the start of the game instead of only when MS02 is completed
+	; This makes the player an enemy of DruadachRedoubtFaction, of which the cidhna mine prisoners are members of
+
+	If !MS02.IsStageDone(100)
+		DruadachRedoubtFaction.SetPlayerEnemy(False)
+		DruadachRedoubtFaction.SetEnemy(PlayerFaction, true, true)
+		DruadachRedoubtFaction.SetEnemy(PlayerHorseFaction, true, true)
+		DruadachRedoubtFaction.SetEnemy(CurrentFollowerFaction, true, true)
+		DruadachRedoubtFaction.SetEnemy(CurrentHireling, true, true)
+	EndIf
+EndFunction
