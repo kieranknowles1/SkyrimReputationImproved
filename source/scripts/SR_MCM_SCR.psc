@@ -605,11 +605,23 @@ event OnConfigInit()
 	; NOTE - Can't auto load config with FISS as it isn't thread safe
 	
 	If JContainers.isInstalled() ; If JContainers is installed
-		Int jBackup = JValue.readFromFile(JContainers.userDirectory() + SRTPresetName)
-		If JValue.isExists(jBackup) ; And there is a preset
-			If JMap.getInt(jBackup, "SRTAutoLoad") ; And it's set to automatically load
-				; Load it
-				LoadJContainers(false)
+;		Int jBackup = JValue.readFromFile(JContainers.userDirectory() + SRTPresetName)
+;		If JValue.isExists(jBackup) ; And there is a preset
+;			If JMap.getInt(jBackup, "SRTAutoLoad") ; And it's set to automatically load
+;				; Load it
+;				LoadJContainers(false)
+;			EndIf
+;		EndIf
+		; This avoids console error when there is no preset
+		If JContainers.fileExistsAtPath(JContainers.userDirectory() + SRTPresetName) ; And there is a preset
+			Int jBackup = JValue.readFromFile(JContainers.userDirectory() + SRTPresetName)
+
+			; Check that it's valid
+			If JValue.isExists(jBackup)
+				If JMap.getInt(jBackup, "SRTAutoLoad") ; And it's set to automatically load
+					; Load it
+					LoadJContainers(false)
+				EndIf
 			EndIf
 		EndIf
 	EndIf
