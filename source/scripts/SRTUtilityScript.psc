@@ -37,7 +37,7 @@ EndFunction
 ; 2 - 1.0
 ; 3 - 1.2
 ; 4 - 1.3.1
-Int version = 3
+Int version = 4
 
 Event OnInit()
 	; Detect if the mod is installed on an existing game
