@@ -48,6 +48,13 @@ Event OnInit()
 	Maintenance()
 EndEvent
 
+; Failsafe
+GlobalVariable Property SR_MCM_Factions_VigilOfStendarr Auto
+Faction Property VigilantOfStendarrFaction Auto
+
+GlobalVariable Property SR_MCM_Factions_Dawnguard Auto
+Faction Property DLC1DawnguardFaction Auto
+
 Function Maintenance()
 	CheckMods()
 	
@@ -60,6 +67,14 @@ Function Maintenance()
 		ElseIf version == 3
 			Update_4()
 		EndIf
+	EndIf
+	
+	If SR_MCM_Factions_VigilOfStendarr.GetValue() == 0.0
+		VigilantOfStendarrFaction.SetPlayerEnemy(false)
+	EndIf
+	
+	If SR_MCM_Factions_Dawnguard.GetValue() == 0.0
+		DLC1DawnguardFaction.SetPlayerEnemy(false) ; DLC1VampireFaction is an enemy of DLC1DawnguardFaction so they will still be hostile
 	EndIf
 EndFunction
 
