@@ -5859,7 +5859,7 @@ Function LoadJContainers(Bool prompt = true)
 	EndIf
 
 	Int version = JMap.getInt(jBackup, "SRTVersion")
-	Debug.Trace("Preset saved in version " + version)
+	;Debug.Trace("Preset saved in version " + version)
 	
 	SR_MCM_Reputation_Message.SetValue(JMap.getInt(jBackup, "Reputation_Message"))
 	SR_MCM_DaedricAuras_Vampire.SetValue(JMap.getInt(jBackup, "DaedricAuras_Vampire"))
@@ -6113,7 +6113,7 @@ Function BeginLoadPreset()
 	fiss.beginLoad("SkyrimReputationPresets.xml")
 	
 	Int version = fiss.loadInt("SRTVersion")
-	Debug.Trace("Preset saved in version " + version)
+	;Debug.Trace("Preset saved in version " + version)
 	
 	SR_MCM_Reputation_Message.SetValue(fiss.loadInt("Reputation_Message"))
 	SR_MCM_DaedricAuras_Vampire.SetValue(fiss.loadInt("DaedricAuras_Vampire"))
